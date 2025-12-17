@@ -11,19 +11,27 @@ const serviceSchema = new mongoose.Schema(
 
     // 2. What is the service?
     title: {
-      type: String, // e.g., "Expert Plumber"
+      type: String,
       required: true,
       trim: true,
     },
 
     // 3. Category (for filtering)
     category: {
-      type: String, // e.g., "Plumbing", "Electrical", "Teaching"
+      type: String,
       required: true,
-      enum: ["Plumbing", "Electrical", "Cleaning", "Teaching", "Beauty", "Repair", "Other"], 
+      enum: [
+        "Plumber",
+        "Electrician",
+        "Carpenter",
+        "Tutor",        // ← ADDED THIS
+        "Cleaner",
+        "Painter",
+        "Other"
+      ],
     },
 
-    // 4. Details
+    // 4. Description
     description: {
       type: String,
       required: true,
@@ -35,15 +43,19 @@ const serviceSchema = new mongoose.Schema(
       required: true,
     },
 
-    // 6. Location (City)
+    // 6. Location (City) - OPTIONAL
     location: {
       type: String,
-      required: true,
+      required: false,  // ← CHANGED FROM true TO false
+    },
+
+    // 7. Service Image (Optional)
+    image: {
+      type: String,
+      default: "",
     },
   },
-  {
-    timestamps: true, // Adds createdAt time
-  }
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("Service", serviceSchema);
