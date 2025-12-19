@@ -30,7 +30,7 @@ exports.createService = async (req, res) => {
 
     // Create new service
     const newService = await Service.create({
-      provider: req.user._id,  // FIXED: Using _id instead of id
+      provider: req.user._id,
       title: title.trim(),
       category,
       description: description.trim(),
@@ -54,59 +54,95 @@ exports.createService = async (req, res) => {
   }
 };
 
-// 2. Get All Services (With Smart Search & Filters)
+// 2. Get All Services (With Smart Search & Filters) - FIXED VERSION
 exports.getAllServices = async (req, res) => {
   try {
-    // A. Get values from URL (?category=Plumber&search=ABC&location=Kolkata)
     const { category, location, search, sort } = req.query;
 
-    // B. Build a "filter" object dynamically
+    console.log("🔍 Fetching all services...");
+    console.log("Query params:", { category, location, search, sort });
+
+    // Build filter object
     let filter = {};
 
-    // C. If category is selected, add it to filter
     if (category) {
       filter.category = category;
+      console.log("📂 Filtering by category:", category);
     }
 
-    // D. If location is typed, search for it (Case Insensitive)
-    // "kolkata", "Kolkata", "KOLKATA" -> all work
     if (location) {
       filter.location = { $regex: location, $options: "i" };
+      console.log("📍 Filtering by location:", location);
     }
 
-    // E. If search keyword is typed, look in Title OR Description
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: "i" } },
         { description: { $regex: search, $options: "i" } },
       ];
+      console.log("🔎 Searching for:", search);
     }
 
-    console.log("🔍 Fetching services with filter:", filter);
+    console.log("🔍 Applied filter:", JSON.stringify(filter));
 
-    // F. Find services matching the filter
-    let query = Service.find(filter).populate("provider", "name email phone");
+    // Find services
+    let services;
+    
+    try {
+      // Try to populate provider info
+      let query = Service.find(filter);
 
-    // G. Sorting (optional)
-    if (sort === "price_low") {
-      query = query.sort({ price: 1 }); // Ascending
-    } else if (sort === "price_high") {
-      query = query.sort({ price: -1 }); // Descending
-    } else {
-      query = query.sort({ createdAt: -1 }); // Newest first (default)
+      // Apply sorting
+      if (sort === "price_low") {
+        query = query.sort({ price: 1 });
+        console.log("💰 Sorting: Price Low to High");
+      } else if (sort === "price_high") {
+        query = query.sort({ price: -1 });
+        console.log("💰 Sorting: Price High to Low");
+      } else {
+        query = query.sort({ createdAt: -1 });
+        console.log("🕐 Sorting: Newest First");
+      }
+
+      // Populate provider information
+      query = query.populate("provider", "name email phone");
+
+      services = await query;
+
+      console.log(`✅ Successfully fetched ${services.length} services`);
+
+    } catch (populateError) {
+      console.log("⚠️ Populate failed, fetching without provider info");
+      console.error("Populate error:", populateError.message);
+      
+      // Fallback: Fetch without populate
+      let query = Service.find(filter);
+
+      if (sort === "price_low") {
+        query = query.sort({ price: 1 });
+      } else if (sort === "price_high") {
+        query = query.sort({ price: -1 });
+      } else {
+        query = query.sort({ createdAt: -1 });
+      }
+
+      services = await query;
+      
+      console.log(`✅ Fetched ${services.length} services (without provider info)`);
     }
 
-    const services = await query;
-
-    console.log(`✅ Found ${services.length} services`);
-
-    res.json(services);
+    res.status(200).json(services);
 
   } catch (error) {
-    console.error("❌ Error fetching services:", error);
+    console.error("❌ Critical error fetching services:", error);
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+
     res.status(500).json({
-      message: "Server Error",
-      error: error.message
+      message: "Failed to fetch services",
+      error: error.message,
+      hint: "Check backend logs for details"
     });
   }
 };
@@ -118,12 +154,20 @@ exports.getServiceById = async (req, res) => {
 
     console.log("🔍 Fetching service with ID:", id);
 
+    // Validate ID format
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        message: "Invalid service ID format"
+      });
+    }
+
     const service = await Service.findById(id).populate(
       "provider",
       "name email phone"
     );
 
     if (!service) {
+      console.log("❌ Service not found");
       return res.status(404).json({
         message: "Service not found"
       });
@@ -131,7 +175,7 @@ exports.getServiceById = async (req, res) => {
 
     console.log("✅ Service found:", service.title);
 
-    res.json(service);
+    res.status(200).json(service);
 
   } catch (error) {
     console.error("❌ Error fetching service:", error);
@@ -178,13 +222,13 @@ exports.updateService = async (req, res) => {
     if (category) service.category = category;
     if (description) service.description = description.trim();
     if (price) service.price = Number(price);
-    if (location) service.location = location;
+    if (location !== undefined) service.location = location;
 
     await service.save();
 
     console.log("✅ Service updated successfully");
 
-    res.json({
+    res.status(200).json({
       message: "Service updated successfully",
       service
     });
@@ -224,7 +268,7 @@ exports.deleteService = async (req, res) => {
 
     console.log("✅ Service deleted successfully");
 
-    res.json({
+    res.status(200).json({
       message: "Service deleted successfully"
     });
 
@@ -246,9 +290,9 @@ exports.getMyServices = async (req, res) => {
       createdAt: -1
     });
 
-    console.log(`✅ Found ${services.length} services`);
+    console.log(`✅ Found ${services.length} services for this user`);
 
-    res.json(services);
+    res.status(200).json(services);
 
   } catch (error) {
     console.error("❌ Error fetching user services:", error);
