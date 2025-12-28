@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
   {
-    // 1. Who is the Customer?
+    // 1. Who is the customer?
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -40,7 +40,7 @@ const bookingSchema = new mongoose.Schema(
     address: {
       type: String,
       required: true,
-    }
+    },
   },
   {
     timestamps: true,

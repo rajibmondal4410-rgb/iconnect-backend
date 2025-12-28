@@ -1,13 +1,20 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const connectDB = require("./config/db2.js"); // Using db2.js as per your setup
+const connectDB = require("./config/db.js"); // Using db.js as per your setup
 
 const app = express();
 
 // Middlewares
 app.use(cors());
 app.use(express.json());
+
+// CRITICAL: Load models BEFORE routes to register them with Mongoose
+console.log("📦 Loading models...");
+require("./models/user");
+require("./models/Service");
+require("./models/Booking");
+console.log("✅ Models loaded!");
 
 // 1. Basic Test Route (GET)
 app.get("/", (req, res) => {
@@ -39,7 +46,7 @@ app.use("/api/reviews", reviewRoutes);
 const adminRoutes = require("./routes/adminRoutes.js");
 app.use("/api/admin", adminRoutes);
 
-// 6. Direct Test Route (POST) - Kept for testing if needed
+// 6. Direct Test Route (POST) - kept for testing if needed
 app.post("/test-direct", (req, res) => {
   res.send("DIRECT SERVER POST IS WORKING");
 });
