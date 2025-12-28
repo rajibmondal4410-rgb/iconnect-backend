@@ -1,5 +1,5 @@
 const Service = require("../models/Service");
-
+const User = require("../models/user"); 
 // 1. Create a New Service (Worker posts a job)
 exports.createService = async (req, res) => {
   try {
