@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const connectDB = require("./config/db.js"); // Using db.js as per your setup
+const mongoose = require("mongoose"); // Changed!
 
 const app = express();
 
@@ -9,28 +9,31 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// CRITICAL: Load models BEFORE routes to register them with Mongoose
+// CRITICAL: Load models BEFORE routes
 console.log("📦 Loading models...");
 require("./models/user");
 require("./models/Service");
 require("./models/Booking");
 console.log("✅ Models loaded!");
 
-// 1. Basic Test Route (GET)
+// Connect to MongoDB directly (no separate db.js file)
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error("❌ MongoDB Error:", err));
+
+// 1. Basic Test Route
 app.get("/", (req, res) => {
   res.send("ICONNECT Backend is running...");
 });
 
-// Connect Database
-connectDB();
-
 // --- ROUTES ---
 
-// 2. Auth Routes (Register, Login, User Profile)
+// 2. Auth Routes
 const authRoutes = require("./routes/authRoutes.js");
 app.use("/api/auth", authRoutes);
 
-// 3. Service Routes (Create Service, Get All Services)
+// 3. Service Routes
 const serviceRoutes = require("./routes/serviceRoutes.js");
 app.use("/api/services", serviceRoutes);
 
@@ -46,13 +49,13 @@ app.use("/api/reviews", reviewRoutes);
 const adminRoutes = require("./routes/adminRoutes.js");
 app.use("/api/admin", adminRoutes);
 
-// 6. Direct Test Route (POST) - kept for testing if needed
+// Test route
 app.post("/test-direct", (req, res) => {
   res.send("DIRECT SERVER POST IS WORKING");
 });
 
-// Start Server on Port 5001
+// Start Server
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
