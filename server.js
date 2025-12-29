@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const mongoose = require("mongoose");
+const connectDB = require("./config/db2.js"); // Using db.js as per your setup
 
 const app = express();
 
@@ -9,53 +9,50 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 1. FIRST: Connect to MongoDB
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log("✅ MongoDB Connected");
-    
-    // 2. SECOND: Load models AFTER MongoDB connects
-    console.log("📦 Loading models...");
-    require("./models/user");
-    require("./models/Service");
-    require("./models/Booking");
-    console.log("✅ Models loaded!");
-  })
-  .catch((err) => console.error("❌ MongoDB Error:", err));
+// CRITICAL: Load models BEFORE routes to register them with Mongoose
+console.log("📦 Loading models...");
+require("./models/user");
+require("./models/Service");
+require("./models/Booking");
+console.log("✅ Models loaded!");
 
-// 3. THIRD: Routes (after models are loaded)
+// 1. Basic Test Route (GET)
 app.get("/", (req, res) => {
   res.send("ICONNECT Backend is running...");
 });
 
-// Auth Routes
+// Connect Database
+connectDB();
+
+// --- ROUTES ---
+
+// 2. Auth Routes (Register, Login, User Profile)
 const authRoutes = require("./routes/authRoutes.js");
 app.use("/api/auth", authRoutes);
 
-// Service Routes
+// 3. Service Routes (Create Service, Get All Services)
 const serviceRoutes = require("./routes/serviceRoutes.js");
 app.use("/api/services", serviceRoutes);
 
-// Booking Routes
+// 4. Booking Routes
 const bookingRoutes = require("./routes/bookingRoutes.js");
 app.use("/api/bookings", bookingRoutes);
 
-// Review Routes
+// 5. Review Routes
 const reviewRoutes = require("./routes/reviewRoutes.js");
 app.use("/api/reviews", reviewRoutes);
 
-// Admin Routes
+// 6. Admin Routes
 const adminRoutes = require("./routes/adminRoutes.js");
 app.use("/api/admin", adminRoutes);
 
-// Test route
+// 6. Direct Test Route (POST) - kept for testing if needed
 app.post("/test-direct", (req, res) => {
   res.send("DIRECT SERVER POST IS WORKING");
 });
 
-// Start Server
+// Start Server on Port 5001
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
