@@ -23,9 +23,9 @@ const serviceSchema = new mongoose.Schema(
       enum: [
         "Plumber",
         "Electrician",
-        "Carpenter",
+        "Beautician",
         "Tutor",        // ← ADDED THIS
-        "Cleaner",
+        "Gym Trainer",
         "Painter",
         "Other"
       ],
